@@ -30,18 +30,44 @@ class Evento extends CI_Controller
                 'cantidad' => array('name' => 'cantidad', 'type' => 'xsd:string'))
         );
 
-        $this->nusoap_server->wsdl->addComplexType('salida',
+        $this->nusoap_server->wsdl->addComplexType('evento',
+            'complexType',
+            'struct',
+            'all',
+            '',
+            array(
+                'idevento' => array('name' => 'idevento', 'type' => 'xsd:string'),
+                'nombre' => array('name' => 'nombre',	'type' => 'xsd:string'),
+                'descripcion' => array('name' => 'apellido', 'type' => 'xsd:string'),
+                'fecha' => array('name' => 'CUIT',	'type' => 'xsd:string'),
+                'hora' => array('name' => 'CUIT',	'type' => 'xsd:string'),
+                'valor' => array('name' => 'CUIT',	'type' => 'xsd:string'),
+                'foto' => array('name' => 'CUIT',	'type' => 'xsd:string')
+            )
+        );
+
+        /*$this->nusoap_server->wsdl->addComplexType('salida',
             'complexType',
             'struct',
             'all',
             '',
             array('codigo' => array('name' => 'codigo', 'type' => 'xsd:string'),
                 'descripcion' => array('name' => 'descripcion', 'type' => 'xsd:string'))
-        );
+        );*/
+
+        $this->nusoap_server->wsdl->addComplexType('listadoEvento',
+            'complexType',
+            'array',
+            '',
+            '',
+            array (array('ref'=>'SOAP-ENC:arrayType','wsdl:arrayType'=>'tns:evento[]'))
+            );
+
+
 
         $this->nusoap_server->register('mostrarEvento', // nombre del metodo o funcion
             array('login' => 'tns:entrada'), // parametros de entrada
-            array('return' => 'tns:salida'), // parametros de salida
+            array('return' => 'tns:listadoEvento'), // parametros de salida
             'urn:mi_ws1', // namespace
             'urn:hellowsdl2#varifica_usuario', // soapaction debe ir asociado al nombre del metodo
             'rpc', // style
@@ -49,11 +75,49 @@ class Evento extends CI_Controller
             'Verifica que el usuario este registrado y lo valida' // documentation
         );
 
+
+
         function mostrarEvento($datos){
-            //$edad_actual = date('Y') - $datos['ano_nac'];
-            //$msg = 'Hola, ' . $datos['nombre'] . '. Hemos procesado la siguiente informacion ' . $datos['email'] . ', telefono' . $datos['telefono'] . ' y su Edad actual es: ' . $edad_actual . '.';
+            $CI =& get_instance();
+            /*Datos de entrada Servicio*/
+            $usuario = $datos['usuario_cliente'];
+            $contrasena = $datos['contrasena_cliente'];
+            $cantidad = $datos['cantidad'];
+
+            $CI->load->model('ClienteModelo');
+            $cliente = $CI->ClienteModelo->obtener_datos_cliente($usuario, $contrasena);
+
+            if($cliente == FALSE){
+                $codigo = '0001';
+                $mensaje = 'Usuario o contrasena no coincide.';
+
+                return array('codigo' => $codigo, 'descripcion' => $mensaje);
+            }
+
+            /*Configuracion Base de datos del Cliente*/
+            $config['hostname'] = 'localhost';
+            $config['username'] = 'root';
+            $config['password'] = '';
+            $config['database'] = $cliente->DATOSCLIENTE;
+            $config['dbdriver'] = 'mysqli';
+            $config['dbprefix'] = '';
+            $config['pconnect'] = FALSE;
+            $config['db_debug'] = TRUE;
+
+            $CI->load->model('EventoModelo','',$config);
+            $eventos = $CI->EventoModelo->obtenerEventos();
+
+            if($eventos == FALSE){
+                $codigo = '0002';
+                $mensaje = 'No existen Salidas de trekking';
+
+                return array('codigo' => $codigo, 'descripcion' => $mensaje);
+            }
+
+
+
             $cod = '0000';
-            $msg = 'Encontrado e identificado';
+            $msg = 'Encontrado e identificado '.$database.' '.$datos['contrasena_cliente'].' '.$datos['cantidad'];
             return array('codigo' => $cod, 'descripcion' => $msg);
         }
 
